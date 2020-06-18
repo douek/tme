@@ -3,5 +3,11 @@
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",
-  "bin": {"tme": "index.js"}
+  "bin": {
+    "tme": "index.js"
+  },
+  "dependencies": {
+    "chalk": "^4.1.0",
+    "jsdom": "^16.2.2"
+  }
 }

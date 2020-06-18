@@ -1,5 +1,9 @@
 const fs = require('fs')
 const path = require('path')
+const chalk = require('chalk')
+const render = require('./render')
+
+const ignore = ['node_modules']
 
 class Runner{
     constructor() {
@@ -7,15 +11,32 @@ class Runner{
     }
     async runTests(){
         for (let file of this.testFiles){
+            console.log(chalk.blue.bold(`------ ${file.shortName}`))
             const beforeEachs = []
+            global.render = render
             global.beforeEach = (fn) => {
                 beforeEachs.push(fn)
             }
-            global.it = (desc, fn)=>{
+            global.it =async (desc, fn)=>{
                 beforeEachs.forEach(func =>func())
-                fn()
+                try{
+                    await fn()
+                    console.log(chalk.greenBright(`\tOK - ${desc}`))
+                } catch (err){
+                    const message = err.message.replace(/\n/g, '\n\t\t')
+                    console.log(chalk.redBright(`\tX - ${desc}`))
+                    console.log('\t',message)
+                }
+                
             }
-            require(file.name)
+
+            try{
+                require(file.name)    
+            } catch (err) {
+                console.log('X - Error loading file ', file.shortName)
+                console.log(chalk.red(err))
+            }
+            
         }
     }
     async collectFiles(targetPath){
@@ -25,8 +46,8 @@ class Runner{
             const fileStat = await fs.promises.lstat(filepath)
 
             if (fileStat.isFile() && file.endsWith('.test.js')){
-                this.testFiles.push({name: filepath})
-            }else if (fileStat.isDirectory()){
+                this.testFiles.push({name: filepath, shortName: file})
+            }else if (fileStat.isDirectory() && !ignore.includes(file)){
                 const chileFiles = await fs.promises.readdir(filepath)
                 files.push(...chileFiles.map(f => path.join(file, f)))
             }
